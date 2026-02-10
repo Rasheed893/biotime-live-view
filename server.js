@@ -45,7 +45,7 @@ function getPool() {
 
 function toIsoDateInput(value, endOfDay = false) {
   if (!value) return undefined;
-  const d = new Date(value);
+  const d = new Date(String(value));
   if (Number.isNaN(d.getTime())) return undefined;
   if (endOfDay) d.setHours(23, 59, 59, 999);
   return d;
@@ -66,14 +66,15 @@ app.get("/api/users", async (_req, res) => {
     const pool = await getPool();
     const result = await pool.request().query(`
       SELECT
-        CAST(UserID as varchar(100)) AS userID,
+        UserID AS userID,
         UserName AS userName,
         Department AS department,
         JobTitle AS jobTitle,
-        CASE WHEN IsActive = 1 THEN 'Active' ELSE 'Inactive' END AS status
+        COALESCE(Status, 'Inactive') AS status
       FROM dbo.Users
       ORDER BY UserName ASC
     `);
+
     res.json(result.recordset);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -85,15 +86,16 @@ app.get("/api/devices", async (_req, res) => {
     const pool = await getPool();
     const result = await pool.request().query(`
       SELECT
-        CAST(DeviceID as varchar(100)) AS deviceID,
+        DeviceID AS deviceID,
         DeviceName AS deviceName,
         IPAddress AS ipAddress,
         SerialNumber AS serialNumber,
         LastSeen AS lastSeen,
-        CASE WHEN IsOnline = 1 THEN 'Online' ELSE 'Offline' END AS status
+        COALESCE(Status, 'Offline') AS status
       FROM dbo.Devices
       ORDER BY DeviceName ASC
     `);
+
     res.json(result.recordset);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -111,45 +113,82 @@ app.get("/api/logs", async (req, res) => {
     request.input("limit", sql.Int, limit);
 
     let where = "WHERE 1=1";
+
     if (fromDate) {
       where += " AND l.EventDateTime >= @fromDate";
       request.input("fromDate", sql.DateTime2, fromDate);
     }
+
     if (toDate) {
       where += " AND l.EventDateTime <= @toDate";
       request.input("toDate", sql.DateTime2, toDate);
     }
+
     if (req.query.userId && req.query.userId !== "all") {
-      where += " AND CAST(l.UserID as varchar(100)) = @userId";
-      request.input("userId", sql.VarChar(100), String(req.query.userId));
+      where += " AND l.UserID = @userId";
+      request.input("userId", sql.NVarChar(50), String(req.query.userId));
     }
+
     if (req.query.deviceId && req.query.deviceId !== "all") {
-      where += " AND CAST(l.DeviceID as varchar(100)) = @deviceId";
-      request.input("deviceId", sql.VarChar(100), String(req.query.deviceId));
+      where += " AND l.DeviceID = @deviceId";
+      request.input("deviceId", sql.NVarChar(50), String(req.query.deviceId));
     }
+
     if (req.query.eventType && req.query.eventType !== "all") {
       where += " AND l.EventType = @eventType";
-      request.input("eventType", sql.VarChar(50), String(req.query.eventType));
+      request.input("eventType", sql.NVarChar(20), String(req.query.eventType));
     }
 
     const result = await request.query(`
       SELECT TOP (@limit)
         CAST(l.LogID as varchar(100)) AS logID,
-        CAST(l.UserID as varchar(100)) AS userID,
-        u.UserName AS userName,
-        CAST(l.DeviceID as varchar(100)) AS deviceID,
-        d.DeviceName AS deviceName,
-        d.IPAddress AS deviceIP,
+        l.UserID AS userID,
+        l.UserName AS userName,
+        l.DeviceID AS deviceID,
+        l.DeviceName AS deviceName,
+        l.DeviceIP AS deviceIP,
         l.EventType AS eventType,
         l.EventDateTime AS eventDateTime,
-        CASE WHEN l.IsRealtime = 1 THEN 'Real-time' ELSE 'Offline' END AS eventStatus,
-        d.SerialNumber AS terminalSerial,
+        l.EventStatus AS eventStatus,
+        l.TerminalSerial AS terminalSerial,
         l.ReceivedAt AS receivedAt
       FROM dbo.AttendanceLogs l
-      LEFT JOIN dbo.Users u ON u.UserID = l.UserID
-      LEFT JOIN dbo.Devices d ON d.DeviceID = l.DeviceID
       ${where}
-      ORDER BY l.EventDateTime DESC
+      ORDER BY l.EventDateTime DESC, l.LogID DESC
+    `);
+
+    res.json(result.recordset);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Optional endpoint based on your raw-message table
+app.get("/api/remote-messages", async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit ?? 200), 1000);
+
+    const pool = await getPool();
+    const request = pool.request();
+    request.input("limit", sql.Int, limit);
+
+    const result = await request.query(`
+      SELECT TOP (@limit)
+        MessageID AS messageID,
+        ReceivedAtUtc AS receivedAtUtc,
+        SourceIP AS sourceIP,
+        SourcePort AS sourcePort,
+        Protocol AS protocol,
+        Identifier AS identifier,
+        RawLength AS rawLength,
+        TerminalSerial AS terminalSerial,
+        EventDateTime AS eventDateTime,
+        EventStatus AS eventStatus,
+        UserID AS userID,
+        AttendanceStatus AS attendanceStatus,
+        Notes AS notes
+      FROM dbo.RemoteMessages
+      ORDER BY ReceivedAtUtc DESC, MessageID DESC
     `);
 
     res.json(result.recordset);

@@ -1,6 +1,6 @@
 # BioTime Live View
 
-React + Vite dashboard for BioTime attendance monitoring.
+React + Vite dashboard for attendance monitoring.
 
 ## Run the frontend
 
@@ -13,9 +13,9 @@ The frontend runs on `http://localhost:8080` and calls API routes under `/api`.
 
 ## SQL Server integration
 
-This app now reads data from HTTP endpoints instead of only dummy generators.
+The UI now loads users/devices/logs from HTTP API endpoints.
 
-### 1) Configure API URL (frontend)
+### 1) Frontend env
 
 Create `.env`:
 
@@ -23,42 +23,40 @@ Create `.env`:
 VITE_API_BASE_URL=/api
 ```
 
-> During local development, Vite proxies `/api` to `http://localhost:4000`.
+> In local dev, Vite proxies `/api` to `http://localhost:4000`.
 
-### 2) Start an API service connected to SQL Server
+### 2) API env
 
-A starter API is included in `server.js` (Express + `mssql`).
-
-Create `.env` for the API:
+Create `.env` for the API server:
 
 ```env
 API_PORT=4000
 DB_SERVER=YOUR_SQL_HOST
-DB_DATABASE=YOUR_DB_NAME
+DB_DATABASE=DummyRemoteMessages
 DB_USER=YOUR_DB_USER
 DB_PASSWORD=YOUR_DB_PASSWORD
 DB_ENCRYPT=false
 DB_TRUST_CERT=true
 ```
 
-Run the API (install dependencies first in your environment):
+### 3) Run API
 
 ```sh
 node server.js
 ```
 
-### 3) Required SQL tables/columns (default mapping)
+## Expected SQL tables (adapted to your schema)
 
-The starter API expects:
+The included `server.js` now matches these tables:
 
-- `dbo.Users`:
-  - `UserID`, `UserName`, `Department`, `JobTitle`, `IsActive`
-- `dbo.Devices`:
-  - `DeviceID`, `DeviceName`, `IPAddress`, `SerialNumber`, `LastSeen`, `IsOnline`
-- `dbo.AttendanceLogs`:
-  - `LogID`, `UserID`, `DeviceID`, `EventType`, `EventDateTime`, `IsRealtime`, `ReceivedAt`
-
-If your schema differs, update the SQL queries in `server.js`.
+- `dbo.Users`
+  - `UserID`, `UserName`, `Department`, `JobTitle`, `Status`
+- `dbo.Devices`
+  - `DeviceID`, `DeviceName`, `IPAddress`, `SerialNumber`, `LastSeen`, `Status`
+- `dbo.AttendanceLogs`
+  - `LogID`, `UserID`, `UserName`, `DeviceID`, `DeviceName`, `DeviceIP`, `EventType`, `EventDateTime`, `EventStatus`, `TerminalSerial`, `ReceivedAt`
+- `dbo.RemoteMessages` (optional endpoint)
+  - `MessageID`, `ReceivedAtUtc`, `SourceIP`, `SourcePort`, `Protocol`, `Identifier`, `RawLength`, `RawData`, `TerminalSerial`, `EventDateTime`, `EventStatus`, `UserID`, `AttendanceStatus`, `Notes`
 
 ## API routes used by UI
 
@@ -67,7 +65,11 @@ If your schema differs, update the SQL queries in `server.js`.
 - `GET /api/logs?limit=500&from=...&to=...&userId=...&deviceId=...&eventType=...`
 - `GET /api/health`
 
+Extra route (for diagnostics/raw data):
+
+- `GET /api/remote-messages?limit=200`
+
 ## Notes
 
-- The UI keeps mock-data fallback behavior if API calls fail, so screens stay usable during setup.
-- Real-time log now polls API logs periodically instead of generating only random records.
+- If API is unavailable, UI pages still gracefully fall back to mock data.
+- Real-time screen polls `/api/logs` periodically.
