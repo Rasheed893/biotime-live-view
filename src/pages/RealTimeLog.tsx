@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { fetchLogs } from "@/lib/api";
 import { generateNewLog, type AttendanceLog } from "@/data/mockData";
 import { exportToCSV, exportToExcel } from "@/lib/export";
 import { RefreshCw, Download, Radio } from "lucide-react";
@@ -16,24 +17,41 @@ export default function RealTimeLog() {
 
   useEffect(() => {
     if (!running) return;
-    const id = setInterval(() => {
-      const log = generateNewLog();
-      setLogs((prev) => [log, ...prev].slice(0, MAX_ROWS));
-      setNewIds((prev) => {
-        const s = new Set(prev);
-        s.add(log.logID);
-        return s;
-      });
-      // remove highlight after 2s
-      setTimeout(() => {
-        setNewIds((prev) => {
-          const s = new Set(prev);
-          s.delete(log.logID);
-          return s;
+
+    const poll = async () => {
+      try {
+        const latest = await fetchLogs({ limit: MAX_ROWS });
+        setLogs((previous) => {
+          const previousIds = new Set(previous.map((item) => item.logID));
+          const incoming = latest.filter((item) => !previousIds.has(item.logID)).map((item) => item.logID);
+
+          if (incoming.length) {
+            setNewIds((prev) => {
+              const s = new Set(prev);
+              incoming.forEach((id) => s.add(id));
+              return s;
+            });
+
+            setTimeout(() => {
+              setNewIds((prev) => {
+                const s = new Set(prev);
+                incoming.forEach((id) => s.delete(id));
+                return s;
+              });
+            }, 2000);
+          }
+
+          return latest.slice(0, MAX_ROWS);
         });
-      }, 2000);
-    }, 1000);
-    return () => clearInterval(id);
+      } catch {
+        const log = generateNewLog();
+        setLogs((prev) => [log, ...prev].slice(0, MAX_ROWS));
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
   }, [running]);
 
   const flatLogs = logs.map((l) => ({
