@@ -1,18 +1,25 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { generateHistoricalLogs, users, type AttendanceLog } from "@/data/mockData";
+import { fetchLogs, fetchUsers } from "@/lib/api";
+import { generateHistoricalLogs, users as fallbackUsers, type AttendanceLog, type User } from "@/data/mockData";
 import { exportToCSV, exportToExcel } from "@/lib/export";
 import { Download, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 export default function Reports() {
-  const [allLogs] = useState<AttendanceLog[]>(() => generateHistoricalLogs());
+  const [allLogs, setAllLogs] = useState<AttendanceLog[]>(() => generateHistoricalLogs());
+  const [users, setUsers] = useState<User[]>(fallbackUsers);
+
+  useEffect(() => {
+    fetchLogs({ limit: 2000 }).then(setAllLogs).catch(() => setAllLogs(generateHistoricalLogs()));
+    fetchUsers().then(setUsers).catch(() => setUsers(fallbackUsers));
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -23,7 +30,7 @@ export default function Reports() {
           <TabsTrigger value="user">Per-User Report</TabsTrigger>
         </TabsList>
         <TabsContent value="daily"><DailyReport logs={allLogs} /></TabsContent>
-        <TabsContent value="user"><UserReport logs={allLogs} /></TabsContent>
+        <TabsContent value="user"><UserReport logs={allLogs} users={users} /></TabsContent>
       </Tabs>
     </div>
   );
@@ -115,7 +122,7 @@ function DailyReport({ logs }: { logs: AttendanceLog[] }) {
   );
 }
 
-function UserReport({ logs }: { logs: AttendanceLog[] }) {
+function UserReport({ logs, users }: { logs: AttendanceLog[]; users: User[] }) {
   const [selectedUser, setSelectedUser] = useState("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();

@@ -1,37 +1,35 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { devices } from "@/data/mockData";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
+import { fetchDevices } from "@/lib/api";
+import { devices as fallbackDevices, type Device } from "@/data/mockData";
 
 export default function DevicesPage() {
+  const [devices, setDevices] = useState<Device[]>(fallbackDevices);
+
+  useEffect(() => {
+    fetchDevices().then(setDevices).catch(() => setDevices(fallbackDevices));
+  }, []);
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Devices</h1>
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead>Status</TableHead>
-              <TableHead>Device Name</TableHead>
-              <TableHead>IP Address</TableHead>
-              <TableHead>Serial Number</TableHead>
-              <TableHead>Last Seen</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {devices.map((d) => (
-              <TableRow key={d.deviceID}>
-                <TableCell>
-                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${d.status === "Online" ? "bg-success" : "bg-destructive"}`} />
-                </TableCell>
-                <TableCell className="text-sm font-medium">{d.deviceName}</TableCell>
-                <TableCell className="text-xs font-mono">{d.ipAddress}</TableCell>
-                <TableCell className="text-xs font-mono">{d.serialNumber}</TableCell>
-                <TableCell className="text-xs">{format(d.lastSeen, "yyyy-MM-dd HH:mm:ss")}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {devices.map((d) => (
+          <Card key={d.deviceID}>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold">{d.deviceName}</p>
+                <Badge variant={d.status === "Online" ? "default" : "outline"}>{d.status}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">ID: {d.deviceID}</p>
+              <p className="text-xs font-mono">IP: {d.ipAddress}</p>
+              <p className="text-xs font-mono">SN: {d.serialNumber}</p>
+              <p className="text-xs text-muted-foreground">Last seen {formatDistanceToNow(d.lastSeen, { addSuffix: true })}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
