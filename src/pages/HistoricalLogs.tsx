@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { generateHistoricalLogs, users, devices, type AttendanceLog, type EventType } from "@/data/mockData";
+import { fetchDevices, fetchLogs, fetchUsers } from "@/lib/api";
+import { generateHistoricalLogs, users as fallbackUsers, devices as fallbackDevices, type AttendanceLog, type Device, type User } from "@/data/mockData";
 import { exportToCSV, exportToExcel } from "@/lib/export";
 import { Download, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -15,13 +15,21 @@ import { cn } from "@/lib/utils";
 const PAGE_SIZE = 20;
 
 export default function HistoricalLogs() {
-  const [allLogs] = useState<AttendanceLog[]>(() => generateHistoricalLogs());
+  const [allLogs, setAllLogs] = useState<AttendanceLog[]>(() => generateHistoricalLogs());
+  const [users, setUsers] = useState<User[]>(fallbackUsers);
+  const [devices, setDevices] = useState<Device[]>(fallbackDevices);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [userFilter, setUserFilter] = useState("all");
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    fetchLogs({ limit: 2000 }).then(setAllLogs).catch(() => setAllLogs(generateHistoricalLogs()));
+    fetchUsers().then(setUsers).catch(() => setUsers(fallbackUsers));
+    fetchDevices().then(setDevices).catch(() => setDevices(fallbackDevices));
+  }, []);
 
   const filtered = useMemo(() => {
     return allLogs.filter((l) => {

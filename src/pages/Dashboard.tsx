@@ -1,21 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { users, devices, generateHistoricalLogs, type AttendanceLog } from "@/data/mockData";
+import { fetchDevices, fetchLogs, fetchUsers } from "@/lib/api";
+import { users as fallbackUsers, devices as fallbackDevices, generateHistoricalLogs, type AttendanceLog, type Device, type User } from "@/data/mockData";
 import { Activity, HardDrive, Clock, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { format, subHours, isAfter } from "date-fns";
+import { format, subHours } from "date-fns";
 
 export default function Dashboard() {
-  const [logs] = useState<AttendanceLog[]>(() => generateHistoricalLogs());
+  const [logs, setLogs] = useState<AttendanceLog[]>(() => generateHistoricalLogs());
+  const [users, setUsers] = useState<User[]>(fallbackUsers);
+  const [devices, setDevices] = useState<Device[]>(fallbackDevices);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayLogs = logs.filter((l) => l.eventDateTime >= today);
+  useEffect(() => {
+    fetchLogs({ limit: 500 }).then(setLogs).catch(() => setLogs(generateHistoricalLogs()));
+    fetchUsers().then(setUsers).catch(() => setUsers(fallbackUsers));
+    fetchDevices().then(setDevices).catch(() => setDevices(fallbackDevices));
+  }, []);
+
+  const todayLogs = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return logs.filter((l) => l.eventDateTime >= today);
+  }, [logs]);
+
   const activeDevices = devices.filter((d) => d.status === "Online").length;
   const lastEvent = logs.length > 0 ? logs[0].eventDateTime : null;
 
-  // Chart: events per hour for last 24h
   const chartData = Array.from({ length: 24 }, (_, i) => {
     const hour = subHours(new Date(), 23 - i);
     const start = new Date(hour);
