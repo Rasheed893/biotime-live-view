@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fetchLogs } from "@/lib/api";
@@ -23,7 +30,9 @@ export default function RealTimeLog() {
         const latest = await fetchLogs({ limit: MAX_ROWS });
         setLogs((previous) => {
           const previousIds = new Set(previous.map((item) => item.logID));
-          const incoming = latest.filter((item) => !previousIds.has(item.logID)).map((item) => item.logID);
+          const incoming = latest
+            .filter((item) => !previousIds.has(item.logID))
+            .map((item) => item.logID);
 
           if (incoming.length) {
             setNewIds((prev) => {
@@ -72,20 +81,37 @@ export default function RealTimeLog() {
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">Real-Time Log</h1>
           {running && (
-            <Badge variant="default" className="gap-1 bg-success text-success-foreground">
+            <Badge
+              variant="default"
+              className="gap-1 bg-success text-success-foreground"
+            >
               <Radio className="h-3 w-3 animate-pulse" /> Live
             </Badge>
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setRunning(!running)}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${running ? "animate-spin" : ""}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRunning(!running)}
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-1 ${running ? "animate-spin" : ""}`}
+            />
             {running ? "Pause" : "Resume"}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => exportToCSV(flatLogs as any, "realtime-log")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToCSV(flatLogs as any, "realtime-log")}
+          >
             <Download className="h-4 w-4 mr-1" /> CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => exportToExcel(flatLogs as any, "realtime-log")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToExcel(flatLogs as any, "realtime-log")}
+          >
             <Download className="h-4 w-4 mr-1" /> Excel
           </Button>
         </div>
@@ -109,39 +135,68 @@ export default function RealTimeLog() {
             <TableBody>
               {logs.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                  <TableCell
+                    colSpan={8}
+                    className="text-center py-10 text-muted-foreground"
+                  >
                     Waiting for events…
                   </TableCell>
                 </TableRow>
               )}
               {logs.map((log) => (
-                <TableRow key={log.logID} className={newIds.has(log.logID) ? "animate-row-highlight" : ""}>
-                  <TableCell className="whitespace-nowrap text-xs">{format(log.eventDateTime, "yyyy-MM-dd HH:mm:ss")}</TableCell>
+                <TableRow
+                  key={log.logID}
+                  className={
+                    newIds.has(log.logID) ? "animate-row-highlight" : ""
+                  }
+                >
+                  <TableCell className="whitespace-nowrap text-xs">
+                    {/* This ignores the browser timezone and shows the "raw" value */}
+                    {log.eventDateTime
+                      .toISOString()
+                      .replace("T", " ")
+                      .substring(0, 19)}
+                  </TableCell>
                   <TableCell className="text-xs">{log.userID}</TableCell>
                   <TableCell className="text-xs">{log.userName}</TableCell>
                   <TableCell className="text-xs">{log.deviceName}</TableCell>
-                  <TableCell className="text-xs font-mono">{log.deviceIP}</TableCell>
+                  <TableCell className="text-xs font-mono">
+                    {log.deviceIP}
+                  </TableCell>
                   <TableCell>
                     <Badge
-                      variant={log.eventType === "Access Denied" ? "destructive" : "secondary"}
+                      variant={
+                        log.eventType === "Access Denied"
+                          ? "destructive"
+                          : "secondary"
+                      }
                       className="text-[10px]"
                     >
                       {log.eventType}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={log.eventStatus === "Real-time" ? "default" : "outline"} className="text-[10px]">
+                    <Badge
+                      variant={
+                        log.eventStatus === "Real-time" ? "default" : "outline"
+                      }
+                      className="text-[10px]"
+                    >
                       {log.eventStatus}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs font-mono">{log.terminalSerial}</TableCell>
+                  <TableCell className="text-xs font-mono">
+                    {log.terminalSerial}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">{logs.length} events captured</p>
+      <p className="text-xs text-muted-foreground">
+        {logs.length} events captured
+      </p>
     </div>
   );
 }

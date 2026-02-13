@@ -1,7 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import sql from "mssql";
+// import sql from "mssql";
+import sql from "mssql/msnodesqlv8.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 4000);
@@ -10,20 +11,36 @@ app.use(cors());
 app.use(express.json());
 
 const dbConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,
+  server: "RASHEED\\SQLEXPRESS",
   database: process.env.DB_DATABASE,
+  driver: "msnodesqlv8",
   options: {
-    encrypt: process.env.DB_ENCRYPT === "true",
-    trustServerCertificate: process.env.DB_TRUST_CERT !== "false",
+    trustedConnection: true,
+    trustServerCertificate: true,
+    useUTC: false,
   },
   pool: {
-    max: Number(process.env.DB_POOL_MAX ?? 10),
+    max: 10,
     min: 0,
     idleTimeoutMillis: 30000,
   },
 };
+
+// const dbConfig = {
+//   user: process.env.DB_USER,
+//   password: process.env.DB_PASSWORD,
+//   server: process.env.DB_SERVER,
+//   database: process.env.DB_DATABASE,
+//   options: {
+//     encrypt: process.env.DB_ENCRYPT === "true",
+//     trustServerCertificate: process.env.DB_TRUST_CERT !== "false",
+//   },
+//   pool: {
+//     max: Number(process.env.DB_POOL_MAX ?? 10),
+//     min: 0,
+//     idleTimeoutMillis: 30000,
+//   },
+// };
 
 let poolPromise;
 
@@ -141,20 +158,21 @@ app.get("/api/logs", async (req, res) => {
 
     const result = await request.query(`
       SELECT TOP (@limit)
-        CAST(l.LogID as varchar(100)) AS logID,
-        l.UserID AS userID,
-        l.UserName AS userName,
-        l.DeviceID AS deviceID,
-        l.DeviceName AS deviceName,
-        l.DeviceIP AS deviceIP,
-        l.EventType AS eventType,
-        l.EventDateTime AS eventDateTime,
-        l.EventStatus AS eventStatus,
-        l.TerminalSerial AS terminalSerial,
-        l.ReceivedAt AS receivedAt
-      FROM dbo.AttendanceLogs l
-      ${where}
-      ORDER BY l.EventDateTime DESC, l.LogID DESC
+    CAST(l.LogID as varchar(100)) AS logID,
+    l.UserID AS userID,
+    l.UserName AS userName,
+    l.DeviceID AS deviceID,
+    l.DeviceName AS deviceName,
+    l.DeviceIP AS deviceIP,
+    l.EventType AS eventType,
+    -- Format 120 sends 'YYYY-MM-DD HH:MM:SS'
+    CONVERT(varchar, l.EventDateTime, 120) AS eventDateTime,
+    l.EventStatus AS eventStatus,
+    l.TerminalSerial AS terminalSerial,
+    CONVERT(varchar, l.ReceivedAt, 120) AS receivedAt
+  FROM dbo.AttendanceLogs l
+  ${where}
+  ORDER BY l.EventDateTime DESC, l.LogID DESC
     `);
 
     res.json(result.recordset);
