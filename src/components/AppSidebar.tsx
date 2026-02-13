@@ -34,8 +34,12 @@ export function AppSidebar() {
         <div className="flex items-center gap-3">
           <img src="/biotime_logo.png" alt="BioTime" className="h-8 w-auto" />
           <div className="leading-tight">
-            <span className="text-sm font-bold text-sidebar-primary-foreground">BioTime</span>
-            <span className="block text-[10px] text-sidebar-foreground/70">Attendance</span>
+            {/* <span className="text-sm font-bold text-sidebar-primary-foreground">
+              BioTime
+            </span> */}
+            <span className="block text-[10px] text-sidebar-foreground/70">
+              Time & Attendance
+            </span>
           </div>
         </div>
       </SidebarHeader>
