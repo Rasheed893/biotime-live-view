@@ -1,7 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import sql from "mssql";
+// import sql from "mssql";
+import sql from "mssql/msnodesqlv8.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 4000);
@@ -10,20 +11,36 @@ app.use(cors());
 app.use(express.json());
 
 const dbConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,
+  server: "RASHEED\\SQLEXPRESS",
   database: process.env.DB_DATABASE,
+  driver: "msnodesqlv8",
   options: {
-    encrypt: process.env.DB_ENCRYPT === "true",
-    trustServerCertificate: process.env.DB_TRUST_CERT !== "false",
+    trustedConnection: true,
+    trustServerCertificate: true,
+    useUTC: false,
   },
   pool: {
-    max: Number(process.env.DB_POOL_MAX ?? 10),
+    max: 10,
     min: 0,
     idleTimeoutMillis: 30000,
   },
 };
+
+// const dbConfig = {
+//   user: process.env.DB_USER,
+//   password: process.env.DB_PASSWORD,
+//   server: process.env.DB_SERVER,
+//   database: process.env.DB_DATABASE,
+//   options: {
+//     encrypt: process.env.DB_ENCRYPT === "true",
+//     trustServerCertificate: process.env.DB_TRUST_CERT !== "false",
+//   },
+//   pool: {
+//     max: Number(process.env.DB_POOL_MAX ?? 10),
+//     min: 0,
+//     idleTimeoutMillis: 30000,
+//   },
+// };
 
 let poolPromise;
 
