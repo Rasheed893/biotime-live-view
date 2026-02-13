@@ -1,0 +1,19 @@
+USE DummyRemoteMessages;
+GO
+
+INSERT INTO Devices
+(DeviceID, DeviceName, IPAddress, SerialNumber, LastSeen, Status)
+VALUES
+('1910SMP0000824', 'Main Entrance', '10.255.254.50',
+ '1910SMP0000824', SYSUTCDATETIME(), 'Online');
+
+
+INSERT INTO Users
+(UserID, UserName, Department, JobTitle, Status)
+VALUES
+('1910', '1910', 'Engineering', 'Developer', 'Active');
+
+
+
+SELECT * FROM AttendanceLogs
+ORDER BY LogID DESC;

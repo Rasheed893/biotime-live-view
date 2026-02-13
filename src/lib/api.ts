@@ -6,7 +6,23 @@ type DateField = AttendanceLog | Device;
 
 function mapDates<T extends DateField>(item: T): T {
   const clone = { ...item } as Record<string, unknown>;
-  if (clone.eventDateTime) clone.eventDateTime = new Date(String(clone.eventDateTime));
+  const toLocalDate = (val: any) => {
+    if (!val) return val;
+
+    // 1. Force the value to a string
+    let dateStr = String(val);
+
+    // 2. Remove 'Z' or '+00:00' so the browser doesn't shift the time
+    dateStr = dateStr.replace("Z", "").split("+")[0].replace("T", " ");
+
+    // 3. Create date object from the "clean" string
+    const d = new Date(dateStr);
+
+    // 4. Safety check: if parsing failed, return original
+    return isNaN(d.getTime()) ? val : d;
+  };
+  if (clone.eventDateTime)
+    clone.eventDateTime = new Date(String(clone.eventDateTime));
   if (clone.receivedAt) clone.receivedAt = new Date(String(clone.receivedAt));
   if (clone.lastSeen) clone.lastSeen = new Date(String(clone.lastSeen));
   return clone as T;
@@ -82,12 +98,18 @@ export interface LogFilters {
 export async function fetchLogs(filters: LogFilters = {}) {
   const params = new URLSearchParams();
   if (filters.limit) params.set("limit", String(filters.limit));
-  if (filters.from) params.set("from", filters.from.toISOString());
+  if (filters.from)
+    params.set("from", filters.from.toLocaleString("sv-SE").replace(" ", "T"));
   if (filters.to) params.set("to", filters.to.toISOString());
-  if (filters.userId && filters.userId !== "all") params.set("userId", filters.userId);
-  if (filters.deviceId && filters.deviceId !== "all") params.set("deviceId", filters.deviceId);
-  if (filters.eventType && filters.eventType !== "all") params.set("eventType", filters.eventType);
+  if (filters.userId && filters.userId !== "all")
+    params.set("userId", filters.userId);
+  if (filters.deviceId && filters.deviceId !== "all")
+    params.set("deviceId", filters.deviceId);
+  if (filters.eventType && filters.eventType !== "all")
+    params.set("eventType", filters.eventType);
   const query = params.toString();
-  const logs = await fetchJson<AttendanceLog[]>(`/logs${query ? `?${query}` : ""}`);
+  const logs = await fetchJson<AttendanceLog[]>(
+    `/logs${query ? `?${query}` : ""}`,
+  );
   return logs.map(mapDates);
 }
