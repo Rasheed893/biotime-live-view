@@ -4,27 +4,42 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 type DateField = AttendanceLog | Device;
 
+function parseServerDate(value: unknown): unknown {
+  if (!value) return value;
+  if (value instanceof Date) return value;
+
+  const raw = String(value).trim();
+
+  // SQL Server values are often sent as "YYYY-MM-DD HH:mm:ss[.SSS]".
+  // Some browsers don't reliably parse this format with `new Date(raw)`.
+  const sqlMatch = raw.match(
+    /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/,
+  );
+
+  if (sqlMatch) {
+    const [, year, month, day, hour, minute, second, millisecond = "0"] = sqlMatch;
+    return new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second),
+      Number(millisecond.padEnd(3, "0")),
+    );
+  }
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? value : parsed;
+}
+
 function mapDates<T extends DateField>(item: T): T {
   const clone = { ...item } as Record<string, unknown>;
-  const toLocalDate = (val: any) => {
-    if (!val) return val;
 
-    // 1. Force the value to a string
-    let dateStr = String(val);
+  if (clone.eventDateTime) clone.eventDateTime = parseServerDate(clone.eventDateTime);
+  if (clone.receivedAt) clone.receivedAt = parseServerDate(clone.receivedAt);
+  if (clone.lastSeen) clone.lastSeen = parseServerDate(clone.lastSeen);
 
-    // 2. Remove 'Z' or '+00:00' so the browser doesn't shift the time
-    dateStr = dateStr.replace("Z", "").split("+")[0].replace("T", " ");
-
-    // 3. Create date object from the "clean" string
-    const d = new Date(dateStr);
-
-    // 4. Safety check: if parsing failed, return original
-    return isNaN(d.getTime()) ? val : d;
-  };
-  if (clone.eventDateTime)
-    clone.eventDateTime = new Date(String(clone.eventDateTime));
-  if (clone.receivedAt) clone.receivedAt = new Date(String(clone.receivedAt));
-  if (clone.lastSeen) clone.lastSeen = new Date(String(clone.lastSeen));
   return clone as T;
 }
 
