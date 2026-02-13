@@ -20,13 +20,54 @@ async function fetchJson<T>(path: string) {
   return response.json() as Promise<T>;
 }
 
+async function postJson<TResponse, TBody>(path: string, body: TBody) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<TResponse>;
+}
+
 export async function fetchUsers() {
   return fetchJson<User[]>("/users");
+}
+
+export interface CreateUserInput {
+  userID: string;
+  userName: string;
+  department: string;
+  jobTitle: string;
+  status: User["status"];
+}
+
+export async function createUser(input: CreateUserInput) {
+  return postJson<User, CreateUserInput>("/users", input);
 }
 
 export async function fetchDevices() {
   const devices = await fetchJson<Device[]>("/devices");
   return devices.map(mapDates);
+}
+
+export interface CreateDeviceInput {
+  deviceID: string;
+  deviceName: string;
+  ipAddress: string;
+  serialNumber: string;
+  status: Device["status"];
+}
+
+export async function createDevice(input: CreateDeviceInput) {
+  const device = await postJson<Device, CreateDeviceInput>("/devices", input);
+  return mapDates(device);
 }
 
 export interface LogFilters {
@@ -36,6 +77,7 @@ export interface LogFilters {
   userId?: string;
   deviceId?: string;
   eventType?: string;
+  order?: "asc" | "desc";
 }
 
 export async function fetchLogs(filters: LogFilters = {}) {
@@ -46,7 +88,10 @@ export async function fetchLogs(filters: LogFilters = {}) {
   if (filters.userId && filters.userId !== "all") params.set("userId", filters.userId);
   if (filters.deviceId && filters.deviceId !== "all") params.set("deviceId", filters.deviceId);
   if (filters.eventType && filters.eventType !== "all") params.set("eventType", filters.eventType);
+  params.set("order", filters.order ?? "desc");
   const query = params.toString();
   const logs = await fetchJson<AttendanceLog[]>(`/logs${query ? `?${query}` : ""}`);
-  return logs.map(mapDates);
+  return logs
+    .map(mapDates)
+    .sort((a, b) => b.eventDateTime.getTime() - a.eventDateTime.getTime() || b.logID.localeCompare(a.logID));
 }
