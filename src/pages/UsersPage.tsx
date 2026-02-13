@@ -20,14 +20,16 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsers().then(setUsers).catch(() => setUsers(fallbackUsers));
+    fetchUsers()
+      .then(setUsers)
+      .catch(() => setUsers(fallbackUsers));
   }, []);
 
   const filtered = users.filter(
     (u) =>
       u.userName.toLowerCase().includes(search.toLowerCase()) ||
       u.userID.toLowerCase().includes(search.toLowerCase()) ||
-      u.department.toLowerCase().includes(search.toLowerCase())
+      u.department.toLowerCase().includes(search.toLowerCase()),
   );
 
   async function handleAddUser(event: FormEvent<HTMLFormElement>) {
@@ -38,7 +40,13 @@ export default function UsersPage() {
     try {
       const created = await createUser(form);
       setUsers((prev) => [created, ...prev]);
-      setForm({ userID: "", userName: "", department: "", jobTitle: "", status: "Active" });
+      setForm({
+        userID: "",
+        userName: "",
+        department: "",
+        jobTitle: "",
+        status: "Active",
+      });
     } catch {
       setError("Unable to add user. Please check API/database connection.");
     } finally {
@@ -72,30 +80,43 @@ export default function UsersPage() {
                 required
                 placeholder="User ID"
                 value={form.userID}
-                onChange={(e) => setForm((prev) => ({ ...prev, userID: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, userID: e.target.value }))
+                }
               />
               <Input
                 required
                 placeholder="User Name"
                 value={form.userName}
-                onChange={(e) => setForm((prev) => ({ ...prev, userName: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, userName: e.target.value }))
+                }
               />
               <Input
                 required
                 placeholder="Department"
                 value={form.department}
-                onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, department: e.target.value }))
+                }
               />
               <Input
                 required
                 placeholder="Job Title"
                 value={form.jobTitle}
-                onChange={(e) => setForm((prev) => ({ ...prev, jobTitle: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, jobTitle: e.target.value }))
+                }
               />
               <select
                 className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={form.status}
-                onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as User["status"] }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    status: e.target.value as User["status"],
+                  }))
+                }
               >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
@@ -112,7 +133,9 @@ export default function UsersPage() {
             <CardContent className="p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="font-semibold">{u.userName}</p>
-                <Badge variant={u.status === "Active" ? "default" : "outline"}>{u.status}</Badge>
+                <Badge variant={u.status === "Active" ? "default" : "outline"}>
+                  {u.status}
+                </Badge>
               </div>
               <p className="text-xs text-muted-foreground">ID: {u.userID}</p>
               <p className="text-sm">{u.jobTitle}</p>

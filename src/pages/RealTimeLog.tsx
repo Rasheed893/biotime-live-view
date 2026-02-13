@@ -32,7 +32,9 @@ export default function RealTimeLog() {
     const poll = async () => {
       try {
         const latest = await fetchLogs({ limit: MAX_ROWS });
-        const normalized = latest.filter((item) => isValidDate(item.eventDateTime));
+        const normalized = latest.filter((item) =>
+          isValidDate(item.eventDateTime),
+        );
 
         setLogs((previous) => {
           if (normalized.length === 0 && previous.length > 0) {
@@ -40,7 +42,9 @@ export default function RealTimeLog() {
           }
 
           const previousIds = new Set(previous.map((item) => item.logID));
-          const incoming = normalized.filter((item) => !previousIds.has(item.logID)).map((item) => item.logID);
+          const incoming = normalized
+            .filter((item) => !previousIds.has(item.logID))
+            .map((item) => item.logID);
 
           if (incoming.length) {
             setNewIds((prev) => {
@@ -193,7 +197,9 @@ export default function RealTimeLog() {
                       {log.eventStatus}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs font-mono">{log.terminalSerial || "-"}</TableCell>
+                  <TableCell className="text-xs font-mono">
+                    {log.terminalSerial || "-"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

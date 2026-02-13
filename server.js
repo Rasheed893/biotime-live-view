@@ -98,6 +98,7 @@ app.get("/api/users", async (_req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 app.post("/api/users", async (req, res) => {
   try {
     const {
@@ -136,6 +137,8 @@ app.post("/api/users", async (req, res) => {
   }
 });
 
+=======
+>>>>>>> Stashed changes
 app.get("/api/devices", async (_req, res) => {
   try {
     const pool = await getPool();
@@ -157,6 +160,7 @@ app.get("/api/devices", async (_req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 app.post("/api/devices", async (req, res) => {
   try {
     const {
@@ -201,6 +205,8 @@ app.post("/api/devices", async (req, res) => {
   }
 });
 
+=======
+>>>>>>> Stashed changes
 app.get("/api/logs", async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit ?? 500), 2000);

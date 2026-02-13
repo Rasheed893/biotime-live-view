@@ -20,7 +20,9 @@ export default function DevicesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDevices().then(setDevices).catch(() => setDevices(fallbackDevices));
+    fetchDevices()
+      .then(setDevices)
+      .catch(() => setDevices(fallbackDevices));
   }, []);
 
   async function handleAddDevice(event: FormEvent<HTMLFormElement>) {
@@ -31,7 +33,13 @@ export default function DevicesPage() {
     try {
       const created = await createDevice(form);
       setDevices((prev) => [created, ...prev]);
-      setForm({ deviceID: "", deviceName: "", ipAddress: "", serialNumber: "", status: "Online" });
+      setForm({
+        deviceID: "",
+        deviceName: "",
+        ipAddress: "",
+        serialNumber: "",
+        status: "Online",
+      });
     } catch {
       setError("Unable to add device. Please check API/database connection.");
     } finally {
@@ -56,30 +64,43 @@ export default function DevicesPage() {
                 required
                 placeholder="Device ID"
                 value={form.deviceID}
-                onChange={(e) => setForm((prev) => ({ ...prev, deviceID: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, deviceID: e.target.value }))
+                }
               />
               <Input
                 required
                 placeholder="Device Name"
                 value={form.deviceName}
-                onChange={(e) => setForm((prev) => ({ ...prev, deviceName: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, deviceName: e.target.value }))
+                }
               />
               <Input
                 required
                 placeholder="IP Address"
                 value={form.ipAddress}
-                onChange={(e) => setForm((prev) => ({ ...prev, ipAddress: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, ipAddress: e.target.value }))
+                }
               />
               <Input
                 required
                 placeholder="Serial Number"
                 value={form.serialNumber}
-                onChange={(e) => setForm((prev) => ({ ...prev, serialNumber: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, serialNumber: e.target.value }))
+                }
               />
               <select
                 className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={form.status}
-                onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as Device["status"] }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    status: e.target.value as Device["status"],
+                  }))
+                }
               >
                 <option value="Online">Online</option>
                 <option value="Offline">Offline</option>
@@ -95,12 +116,16 @@ export default function DevicesPage() {
             <CardContent className="p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="font-semibold">{d.deviceName}</p>
-                <Badge variant={d.status === "Online" ? "default" : "outline"}>{d.status}</Badge>
+                <Badge variant={d.status === "Online" ? "default" : "outline"}>
+                  {d.status}
+                </Badge>
               </div>
               <p className="text-xs text-muted-foreground">ID: {d.deviceID}</p>
               <p className="text-xs font-mono">IP: {d.ipAddress}</p>
               <p className="text-xs font-mono">SN: {d.serialNumber}</p>
-              <p className="text-xs text-muted-foreground">Last seen {formatDistanceToNow(d.lastSeen, { addSuffix: true })}</p>
+              <p className="text-xs text-muted-foreground">
+                Last seen {formatDistanceToNow(d.lastSeen, { addSuffix: true })}
+              </p>
             </CardContent>
           </Card>
         ))}
