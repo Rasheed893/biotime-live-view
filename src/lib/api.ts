@@ -93,6 +93,7 @@ export interface LogFilters {
   userId?: string;
   deviceId?: string;
   eventType?: string;
+  order?: "asc" | "desc";
 }
 
 export async function fetchLogs(filters: LogFilters = {}) {
@@ -101,15 +102,13 @@ export async function fetchLogs(filters: LogFilters = {}) {
   if (filters.from)
     params.set("from", filters.from.toLocaleString("sv-SE").replace(" ", "T"));
   if (filters.to) params.set("to", filters.to.toISOString());
-  if (filters.userId && filters.userId !== "all")
-    params.set("userId", filters.userId);
-  if (filters.deviceId && filters.deviceId !== "all")
-    params.set("deviceId", filters.deviceId);
-  if (filters.eventType && filters.eventType !== "all")
-    params.set("eventType", filters.eventType);
+  if (filters.userId && filters.userId !== "all") params.set("userId", filters.userId);
+  if (filters.deviceId && filters.deviceId !== "all") params.set("deviceId", filters.deviceId);
+  if (filters.eventType && filters.eventType !== "all") params.set("eventType", filters.eventType);
+  params.set("order", filters.order ?? "desc");
   const query = params.toString();
-  const logs = await fetchJson<AttendanceLog[]>(
-    `/logs${query ? `?${query}` : ""}`,
-  );
-  return logs.map(mapDates);
+  const logs = await fetchJson<AttendanceLog[]>(`/logs${query ? `?${query}` : ""}`);
+  return logs
+    .map(mapDates)
+    .sort((a, b) => b.eventDateTime.getTime() - a.eventDateTime.getTime() || b.logID.localeCompare(a.logID));
 }
