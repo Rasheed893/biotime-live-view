@@ -81,6 +81,33 @@ app.get("/api/users", async (_req, res) => {
   }
 });
 
+app.post("/api/users", async (req, res) => {
+  try {
+    const { userID, userName, department, jobTitle, status = "Active" } = req.body;
+
+    if (!userID || !userName || !department || !jobTitle) {
+      return res.status(400).json({ message: "userID, userName, department, and jobTitle are required" });
+    }
+
+    const pool = await getPool();
+    await pool
+      .request()
+      .input("userID", sql.NVarChar(50), userID)
+      .input("userName", sql.NVarChar(100), userName)
+      .input("department", sql.NVarChar(100), department)
+      .input("jobTitle", sql.NVarChar(100), jobTitle)
+      .input("status", sql.NVarChar(20), status)
+      .query(`
+        INSERT INTO dbo.Users (UserID, UserName, Department, JobTitle, Status)
+        VALUES (@userID, @userName, @department, @jobTitle, @status)
+      `);
+
+    return res.status(201).json({ userID, userName, department, jobTitle, status });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 app.get("/api/devices", async (_req, res) => {
   try {
     const pool = await getPool();
@@ -99,6 +126,42 @@ app.get("/api/devices", async (_req, res) => {
     res.json(result.recordset);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/api/devices", async (req, res) => {
+  try {
+    const { deviceID, deviceName, ipAddress, serialNumber, status = "Online" } = req.body;
+
+    if (!deviceID || !deviceName || !ipAddress || !serialNumber) {
+      return res
+        .status(400)
+        .json({ message: "deviceID, deviceName, ipAddress, and serialNumber are required" });
+    }
+
+    const pool = await getPool();
+    await pool
+      .request()
+      .input("deviceID", sql.NVarChar(100), deviceID)
+      .input("deviceName", sql.NVarChar(100), deviceName)
+      .input("ipAddress", sql.NVarChar(100), ipAddress)
+      .input("serialNumber", sql.NVarChar(100), serialNumber)
+      .input("status", sql.NVarChar(20), status)
+      .query(`
+        INSERT INTO dbo.Devices (DeviceID, DeviceName, IPAddress, SerialNumber, LastSeen, Status)
+        VALUES (@deviceID, @deviceName, @ipAddress, @serialNumber, SYSUTCDATETIME(), @status)
+      `);
+
+    return res.status(201).json({
+      deviceID,
+      deviceName,
+      ipAddress,
+      serialNumber,
+      lastSeen: new Date().toISOString(),
+      status,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 });
 
