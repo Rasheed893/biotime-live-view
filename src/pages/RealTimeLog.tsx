@@ -22,17 +22,25 @@ export default function RealTimeLog() {
   const [running, setRunning] = useState(true);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
 
+  function isValidDate(value: unknown): value is Date {
+    return value instanceof Date && !Number.isNaN(value.getTime());
+  }
+
   useEffect(() => {
     if (!running) return;
 
     const poll = async () => {
       try {
         const latest = await fetchLogs({ limit: MAX_ROWS });
+        const normalized = latest.filter((item) => isValidDate(item.eventDateTime));
+
         setLogs((previous) => {
+          if (normalized.length === 0 && previous.length > 0) {
+            return previous;
+          }
+
           const previousIds = new Set(previous.map((item) => item.logID));
-          const incoming = latest
-            .filter((item) => !previousIds.has(item.logID))
-            .map((item) => item.logID);
+          const incoming = normalized.filter((item) => !previousIds.has(item.logID)).map((item) => item.logID);
 
           if (incoming.length) {
             setNewIds((prev) => {
@@ -50,7 +58,7 @@ export default function RealTimeLog() {
             }, 2000);
           }
 
-          return latest.slice(0, MAX_ROWS);
+          return normalized.slice(0, MAX_ROWS);
         });
       } catch {
         const log = generateNewLog();
@@ -185,9 +193,7 @@ export default function RealTimeLog() {
                       {log.eventStatus}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs font-mono">
-                    {log.terminalSerial}
-                  </TableCell>
+                  <TableCell className="text-xs font-mono">{log.terminalSerial || "-"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
